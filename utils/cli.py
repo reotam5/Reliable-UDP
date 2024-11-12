@@ -14,11 +14,12 @@ class CLI():
         stdscr.nodelay(1)
         selection = 0 
 
-        while True:
-            stdscr.clear()
-            stdscr.addstr(0, 0, "Proxy parameters")
-            stdscr.addstr(1, 0, "UP/DOWN arrows to select value, LEFT/RIGHT to adjust")
+        stdscr.clear()
+        for i in range(len(self.titles)):
+            stdscr.addstr(i, 0, self.titles[i])
+        stdscr.refresh()
 
+        while True:
             for i, item in enumerate(self.values):
                 if i == selection:
                     attr = curses.A_NORMAL
@@ -27,7 +28,7 @@ class CLI():
                     attr = curses.A_NORMAL
                     cursor = " "
 
-                value_str = "{cursor} {name}: {value}{suffix}".format(cursor=cursor, name=item["name"], value=item["get_value"](), suffix=item["suffix"])
+                value_str = "{cursor} {name}: {value}{suffix}\n".format(cursor=cursor, name=item["name"], value=item["get_value"](), suffix=item["suffix"])
                 stdscr.addstr(i + 3, 0, value_str, attr)
 
             key = stdscr.getch()
