@@ -2,10 +2,7 @@ import ipaddress
 from socket import AF_INET, socket, SOCK_DGRAM
 import random
 import time
-from typing import Any
-import curses
 from concurrent.futures import ThreadPoolExecutor
-
 from utils.cli import CLI
 
 
