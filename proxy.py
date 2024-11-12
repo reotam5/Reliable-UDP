@@ -79,12 +79,58 @@ if __name__ == "__main__":
             "UP/DOWN arrows to select value, LEFT/RIGHT to adjust",
         ], 
         [
-            {"name": "Client drop", "min": 0, "max": 100, "step": 10, "suffix": "%","get_value": lambda: proxy.get_config("client","drop"), "set_value": lambda x: proxy.set_config("client", "drop", x)},
-            {"name": "Client delay", "min": 0, "max": 100, "step": 10, "suffix": "%","get_value": lambda: proxy.get_config("client","delay"), "set_value": lambda x: proxy.set_config("client", "delay", x)},
-            {"name": "Client delay time", "min": 0,"step": 100, "suffix": "ms","get_value": lambda: proxy.get_config("client","delay_time"), "set_value": lambda x: proxy.set_config("client", "delay_time", x)},
-            {"name": "Server drop", "min": 0, "max": 100, "step": 10, "suffix": "%","get_value": lambda: proxy.get_config("server","drop"), "set_value": lambda x: proxy.set_config("server", "drop", x)},
-            {"name": "Server delay", "min": 0, "max": 100, "step": 10, "suffix": "%","get_value": lambda: proxy.get_config("server","delay"), "set_value": lambda x: proxy.set_config("server", "delay", x)},
-            {"name": "Server delay time", "min": 0,"step": 100, "suffix": "ms","get_value": lambda: proxy.get_config("server","delay_time"), "set_value": lambda x: proxy.set_config("server", "delay_time", x)},
+            {
+                "name": "Client drop", 
+                "min": 0, 
+                "max": 100, 
+                "step": 10, 
+                "suffix": "%",
+                "get_value": lambda: proxy.get_config("client","drop"), 
+                "set_value": lambda x: proxy.set_config("client", "drop", x)
+            },
+            {
+                "name": "Client delay",
+                "min": 0, 
+                "max": 100, 
+                "step": 10, 
+                "suffix": "%",
+                "get_value": lambda: proxy.get_config("client","delay"), 
+                "set_value": lambda x: proxy.set_config("client", "delay", x)
+            },
+            {
+                "name": "Client delay time", 
+                "min": 0,
+                "step": 100, 
+                "suffix": "ms",
+                "get_value": lambda: proxy.get_config("client","delay_time"), 
+                "set_value": lambda x: proxy.set_config("client", "delay_time", x)
+            },
+            {
+                "name": "Server drop", 
+                "min": 0, 
+                "max": 100, 
+                "step": 10, 
+                "suffix": "%",
+                "get_value": lambda: proxy.get_config("server","drop"), 
+                "set_value": lambda x: proxy.set_config("server", "drop", x)
+            },
+            {
+                "name": "Server delay", 
+                "min": 0, 
+                "max": 100, 
+                "step": 10, 
+                "suffix": "%",
+                "get_value": lambda: proxy.get_config("server","delay"), 
+                "set_value": lambda x: proxy.set_config("server", "delay", x)
+            },
+            {
+                "name": "Server delay time", 
+                "min": 0,
+                "step": 100, 
+                "suffix": "ms",
+                "get_value": lambda: proxy.get_config("server","delay_time"), 
+                "set_value": lambda x: proxy.set_config("server", "delay_time", x)
+            },
         ], 
         10
     )
