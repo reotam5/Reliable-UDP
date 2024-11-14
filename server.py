@@ -6,9 +6,8 @@ if __name__ == "__main__":
     reliableUDP.bind(INADDR_ANY, 5000)
     while True:
         reliableUDP.accept()
+        print("connected")
 
-        while data := reliableUDP.receive():
-            print(data, end="")
-
-        print("")
+        message, = reliableUDP.receive()
+        print(message)
 
