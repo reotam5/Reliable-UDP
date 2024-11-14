@@ -1,0 +1,3 @@
+setup_environment
+# Run the Python script with provided arguments
+python3 ../proxy.py "$@"
