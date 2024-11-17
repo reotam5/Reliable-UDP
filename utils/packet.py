@@ -3,10 +3,9 @@ from typing import Optional, Union
 custom_header = {
     "seq_num": 2,
     "ack_num": 2,
-    "syn": 1/8,
     "ack": 1/8,
     "fin": 1/8,
-    "offset": 5/8, # offset to make header length nice number
+    "offset": 6/8, # offset to make header length nice number
 }
 
 class Packet():

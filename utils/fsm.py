@@ -28,6 +28,7 @@ class FSM:
                         self.curret_state, *next_args = result
                     else:
                         self.curret_state = result
+                        next_args = ()
                 else:
                     self.curret_state = None
 
