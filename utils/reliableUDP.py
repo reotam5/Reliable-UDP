@@ -3,6 +3,7 @@ from socket import AF_INET, SOCK_DGRAM, socket
 from typing import Any 
 from utils.packet import Packet 
 from utils.fsm import FSM
+import random
 
 
 class ReliableUDP():
@@ -11,9 +12,10 @@ class ReliableUDP():
     def __init__(self):
         self.socket: socket
         self.timeout = 2
+        self.random_int = 0
         self.message_pointer = 0
         self.payload_size = 1
-        self.target_addr: Any
+        self.target_addr: Any = None
 
     def create(self):
         self.socket = socket(AF_INET, SOCK_DGRAM)
@@ -24,12 +26,16 @@ class ReliableUDP():
 
     def send(self, message, ip, port):
         self.message_pointer = 0
+        self.random_int = random.randint(0, 1000)
+
         def send_data():
             if self.message_pointer == len(message):
                 return "WAIT_FIN"
             packet = Packet()
-            packet.set_header_field("seq_num", str(self.message_pointer), base=10)
+            packet.set_header_field("seq_num", str(self.random_int + self.message_pointer), base=10)
             message_end_pointer = min(self.message_pointer + self.payload_size, len(message))
+            if self.message_pointer == 0:
+                packet.set_header_field("syn", "1", base=2)
             if message_end_pointer == len(message):
                 packet.set_header_field("fin", "1", base=2)
             packet.set_payload(message[self.message_pointer:message_end_pointer])
@@ -47,7 +53,7 @@ class ReliableUDP():
                 if is_fin:
                     return "SEND_ACK"
                 if is_ack:
-                    self.message_pointer = ack_num
+                    self.message_pointer = ack_num - self.random_int
                 return "SEND_DATA"
             except TimeoutError:
                 return "SEND_DATA"
@@ -66,7 +72,7 @@ class ReliableUDP():
 
         def send_ack():
             packet = Packet()
-            packet.set_header_field("seq_num", str(self.message_pointer + 1), base=10)
+            packet.set_header_field("seq_num", str(self.message_pointer + self.random_int + 1), base=10)
             packet.set_header_field("ack_num", "1", base=2)
             packet.set_header_field("ack", "1", base=2)
             self.socket.sendto(packet.to_byte(), (str(ipaddress.ip_address(ip)), port))
@@ -82,8 +88,8 @@ class ReliableUDP():
                 { "source": "SEND_DATA", "dest": "WAIT_FIN", "action": wait_fin },
                 { "source": "WAIT_FIN", "dest": "SEND_ACK", "action": send_ack },
                 { "source": "WAIT_FIN", "dest": "WAIT_FIN", "action": wait_fin },
-                { "source": "WAIT_FIN", "dest": FSM.STATE.EXIT, "action": None },
-                { "source": "SEND_ACK", "dest": FSM.STATE.EXIT, "action": None },
+                { "source": "WAIT_FIN", "dest": FSM.STATE.EXIT, "action": lambda: self.socket.close() },
+                { "source": "SEND_ACK", "dest": FSM.STATE.EXIT, "action": lambda: self.socket.close() },
             ],
             initial_state="SEND_DATA",
             verbose=True
@@ -91,7 +97,6 @@ class ReliableUDP():
         fsm.run()
 
     def recv(self):
-        self.message_pointer = 0
         def receive_data(prev_message = ""):
             try:
                 data, addr = self.socket.recvfrom(1024)
@@ -99,20 +104,27 @@ class ReliableUDP():
                 seq_num = int(packet.get_header_field("seq_num", base=10))
                 payload = packet.get_payload() or ""
                 is_last_message = packet.get_header_field("fin", base=2) == "1"
+                is_first_message = packet.get_header_field("syn", base=2) == "1"
 
-                if seq_num == self.message_pointer:
+                if is_first_message:
+                    self.message_pointer = 0
                     self.target_addr = addr
+                    self.random_int = seq_num
+
+                if seq_num - self.random_int == self.message_pointer:
                     self.message_pointer = len(prev_message + payload)
                     return ("SEND_ACK", prev_message + payload, is_last_message)
-                return ("SEND_ACK", prev_message, is_last_message)
+                return ("SEND_ACK", prev_message, False)
 
             except TimeoutError:
                 return ("RECEIVE_DATA", prev_message)
 
         def send_ack(acknowledged_message, is_last_message):
+            if not self.target_addr:
+                return ("RECEIVE_DATA", "")
             packet = Packet()
             packet.set_header_field("ack", "1", base=2)
-            packet.set_header_field("ack_num", str(len(acknowledged_message)), base=10)
+            packet.set_header_field("ack_num", str(self.random_int + len(acknowledged_message)), base=10)
             self.socket.sendto(packet.to_byte(), self.target_addr)
             
             if is_last_message:
