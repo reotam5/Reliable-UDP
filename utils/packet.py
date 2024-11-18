@@ -6,7 +6,8 @@ custom_header = {
     "syn": 1/8,
     "ack": 1/8,
     "fin": 1/8,
-    "offset": 5/8, # offset to make header length nice number
+    "rst": 1/8,
+    "offset": 4/8, # offset to make header length nice number
 }
 
 class Packet():

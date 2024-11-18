@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Any
 
 
 class FSM:
@@ -14,7 +15,7 @@ class FSM:
 
 
     def run(self, *args):
-        next_args = args
+        next_args: Any = args
         while self.prev_state != FSM.STATE.EXIT:
             next_transition = next((item for item in self.transitions if (item['source'] == self.prev_state and item['dest'] == self.curret_state)), None)
             temp_prev = self.prev_state
@@ -27,8 +28,11 @@ class FSM:
                     if type(result) is tuple:
                         self.curret_state, *next_args = result
                     else:
-                        self.curret_state = result
-                        next_args = ()
+                        if self.prev_state == FSM.STATE.EXIT:
+                            next_args = (result)
+                        else:
+                            self.curret_state = result
+                            next_args = ()
                 else:
                     self.curret_state = None
 
