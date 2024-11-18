@@ -34,6 +34,7 @@ class ReliableUDP():
                 return "WAIT_FIN"
             packet = Packet()
             packet.set_header_field("seq_num", str(self.random_int + self.message_pointer), base=10)
+            packet.set_header_field("ack_num", str(self.random_int_peer), base=10)
             message_end_pointer = min(self.message_pointer + self.payload_size, len(message))
             if self.message_pointer == 0:
                 packet.set_header_field("syn", "1", base=2)
