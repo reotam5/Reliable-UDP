@@ -29,7 +29,7 @@ class FSM:
                         self.curret_state, *next_args = result
                     else:
                         if self.prev_state == FSM.STATE.EXIT:
-                            next_args = (result)
+                            next_args = (result,)
                         else:
                             self.curret_state = result
                             next_args = ()
@@ -41,4 +41,4 @@ class FSM:
 
             else:
                 raise Exception("transition from {val1} to {val2} is not defined".format(val1=self.prev_state, val2=self.curret_state))
-        return next_args
+        return next_args[0] if len(next_args) > 0 else None

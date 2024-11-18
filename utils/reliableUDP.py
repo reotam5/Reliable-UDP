@@ -12,6 +12,7 @@ class ReliableUDP():
     def __init__(self):
         self.socket: socket
         self.timeout = 0.1
+        self.disconnect_timeout = 60
         self.random_int = 0
         self.random_int_peer = 0
         self.message_pointer = 0
@@ -29,7 +30,7 @@ class ReliableUDP():
         self.message_pointer = 0
         self.random_int = random.randint(1, 1000)
 
-        def send_data():
+        def send_data(retry = self.disconnect_timeout // self.timeout):
             if self.message_pointer == len(message):
                 return "WAIT_FIN"
             packet = Packet()
@@ -42,9 +43,11 @@ class ReliableUDP():
                 packet.set_header_field("fin", "1", base=2)
             packet.set_payload(message[self.message_pointer:message_end_pointer])
             self.socket.sendto(packet.to_byte(), (str(ip), port))
-            return "WAIT_ACK"
+            return ("WAIT_ACK", retry - 1)
 
-        def wait_ack():
+        def wait_ack(retry):
+            if retry < 0:
+                return FSM.STATE.EXIT
             try:
                 self.socket.settimeout(self.timeout)
                 data, _ = self.socket.recvfrom(1024)
@@ -62,11 +65,13 @@ class ReliableUDP():
                     if self.message_pointer == 0:
                         self.random_int_peer = seq_num
                     self.message_pointer = ack_num - self.random_int
-                return "SEND_DATA"
+                return ("SEND_DATA", retry)
             except TimeoutError:
-                return "SEND_DATA"
+                return ("SEND_DATA", retry)
 
-        def wait_fin():
+        def wait_fin(retry = self.disconnect_timeout // self.timeout):
+            if retry < 0:
+                return FSM.STATE.EXIT
             try:
                 self.socket.settimeout(self.timeout)
                 data, _ = self.socket.recvfrom(1024)
@@ -74,7 +79,7 @@ class ReliableUDP():
                 is_fin = packet.get_header_field("fin", base=2) == "1"
                 if is_fin:
                     return "SEND_ACK"
-                return "WAIT_FIN"
+                return ("WAIT_FIN", retry - 1)
             except TimeoutError:
                 return FSM.STATE.EXIT
 
@@ -109,8 +114,11 @@ class ReliableUDP():
         self.message_pointer = 0
         self.random_int = random.randint(1, 1000)
 
-        def receive_data(prev_message = ""):
+        def receive_data(prev_message = "", retry = self.disconnect_timeout // self.timeout):
+            if retry < 0:
+                return (FSM.STATE.EXIT, None)
             try:
+                self.socket.settimeout(self.timeout)
                 data, addr = self.socket.recvfrom(1024)
                 packet = Packet(data)
                 seq_num = int(packet.get_header_field("seq_num", base=10))
@@ -132,7 +140,7 @@ class ReliableUDP():
                 return ("SEND_ACK", prev_message, False)
 
             except TimeoutError:
-                return ("RECEIVE_DATA", prev_message)
+                return ("RECEIVE_DATA", prev_message, retry - 1)
 
         def send_rst():
             packet = Packet()
@@ -185,11 +193,13 @@ class ReliableUDP():
                 { "source": "RECEIVE_DATA", "dest": "SEND_ACK", "action": send_ack },
                 { "source": "RECEIVE_DATA", "dest": "RECEIVE_DATA", "action": receive_data },
                 { "source": "RECEIVE_DATA", "dest": "SEND_RST", "action": send_rst },
+                { "source": "RECEIVE_DATA", "dest": FSM.STATE.EXIT, "action": None },
                 { "source": "SEND_RST", "dest": "RECEIVE_DATA", "action": receive_data },
                 { "source": "SEND_ACK", "dest": "RECEIVE_DATA", "action": receive_data },
                 { "source": "SEND_ACK", "dest": "SEND_FIN", "action": send_fin },
                 { "source": "SEND_FIN", "dest": "WAIT_ACK", "action": wait_ack },
                 { "source": "WAIT_ACK", "dest": "SEND_FIN", "action": send_fin },
+                { "source": "WAIT_ACK", "dest": "WAIT_ACK", "action": wait_ack },
                 { "source": "WAIT_ACK", "dest": FSM.STATE.EXIT, "action": clean_up },
             ],
             initial_state="RECEIVE_DATA",
