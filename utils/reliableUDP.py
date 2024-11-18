@@ -11,7 +11,7 @@ class ReliableUDP():
 
     def __init__(self):
         self.socket: socket
-        self.timeout = 2
+        self.timeout = 0.1
         self.random_int = 0
         self.random_int_peer = 0
         self.message_pointer = 0
