@@ -11,7 +11,7 @@ class ReliableUDP():
 
     def __init__(self):
         self.socket: socket
-        self.timeout = 0.5
+        self.timeout = 0.1
         self.timeout_disconnect = 5
         self.random_int = 0
         self.random_int_peer = 0
@@ -48,10 +48,8 @@ class ReliableUDP():
 
         def wait_ack(is_first, is_last, retry):
             if retry < 0:
-                if is_last:
-                    print("it's likely that server is already closed. we are closing too...")
-                else:
-                    print('connection timeout')
+                if not is_last:
+                    print('timeout after sending:', message[:self.message_pointer] )
                 return FSM.STATE.EXIT
             try:
                 self.socket.settimeout(self.timeout)
@@ -79,7 +77,6 @@ class ReliableUDP():
             packet.set_header_field("ack_num", str(self.random_int_peer + 1), base=10)
             packet.set_header_field("ack", "1", base=2)
             self.socket.sendto(packet.to_byte(), (str(ipaddress.ip_address(ip)), port))
-            print('closing gracefully....')
             return FSM.STATE.EXIT
             
 
@@ -118,6 +115,7 @@ class ReliableUDP():
                 self.message_pointer = 0
                 self.target_addr = addr
                 self.random_int_peer = seq_num
+                prev_message = ""
 
             if is_valid or is_first_message or is_new_connection:
                 self.message_pointer = len(prev_message + payload)
@@ -147,7 +145,6 @@ class ReliableUDP():
 
         def wait_ack(message, retry):
             if retry < 0:
-                print('it is likely that client is already closed. we are closing too')
                 return (FSM.STATE.EXIT, message)
             try:
                 self.socket.settimeout(self.timeout)
@@ -157,7 +154,6 @@ class ReliableUDP():
                 ack_num = int(packet.get_header_field("ack_num", base=10))
                 is_valid = ack_num  == self.random_int + 1
                 if is_ack and is_valid:
-                    print('closing gracefully....')
                     return (FSM.STATE.EXIT, message)
                 return ("SEND_FIN", message, retry - 1)
             except:
@@ -174,13 +170,10 @@ class ReliableUDP():
             [
                 { "source": FSM.STATE.START, "dest": "RECEIVE_DATA", "action": receive_data },
                 { "source": "RECEIVE_DATA", "dest": "SEND_ACK", "action": send_ack },
-                { "source": "RECEIVE_DATA", "dest": "RECEIVE_DATA", "action": receive_data },
-                { "source": "RECEIVE_DATA", "dest": FSM.STATE.EXIT, "action": clean_up },
                 { "source": "SEND_ACK", "dest": "RECEIVE_DATA", "action": receive_data },
                 { "source": "SEND_ACK", "dest": "SEND_FIN", "action": send_fin },
                 { "source": "SEND_FIN", "dest": "WAIT_ACK", "action": wait_ack },
                 { "source": "WAIT_ACK", "dest": "SEND_FIN", "action": send_fin },
-                { "source": "WAIT_ACK", "dest": "WAIT_ACK", "action": wait_ack },
                 { "source": "WAIT_ACK", "dest": FSM.STATE.EXIT, "action": clean_up },
             ],
             initial_state="RECEIVE_DATA",
