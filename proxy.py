@@ -107,10 +107,10 @@ def main():
         target_port=5000,
         client_drop=0,
         client_delay=50,
-        client_delay_time=5000,
+        client_delay_time=500,
         server_drop=0,
         server_delay=50,
-        server_delay_time=5000,
+        server_delay_time=500,
     )
     cli = CLI(
         [
