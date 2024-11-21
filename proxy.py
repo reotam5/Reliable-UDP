@@ -5,9 +5,7 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from socket import AF_INET, SOCK_DGRAM, socket
-
 from utils.cli import CLI
-
 
 class Proxy:
     def __init__(
@@ -23,7 +21,6 @@ class Proxy:
         server_delay: float,
         server_delay_time: float,
     ):
-        self.running = True
         self.listen_ip = listen_ip
         self.listen_port = listen_port
         self.socket = socket(AF_INET, SOCK_DGRAM)
@@ -50,42 +47,48 @@ class Proxy:
         config = self.client_config if target == "client" else self.server_config
         return config[field]
 
-    def run(self):
-        self.running = True
-        self.socket.bind((str(ipaddress.ip_address(self.listen_ip)), self.listen_port))
-        while self.running:
-            data, (ip, port) = self.socket.recvfrom(65535)
-            is_server = (
-                ip == self.server_config["ip"] and port == self.server_config["port"]
-            )
-            if not is_server:
-                self.client_config["ip"] = ip
-                self.client_config["port"] = port
-            forward_to = (
-                str(
-                    ipaddress.ip_address(
-                        self.client_config["ip"]
-                        if is_server
-                        else self.server_config["ip"]
-                    )
-                ),
-                self.client_config["port"] if is_server else self.server_config["port"],
-            )
-            config = self.server_config if is_server else self.client_config
-            drop_prob = config["drop"]
-            delay_prob = config["delay"]
-            delay_time = config["delay_time"]
+    @staticmethod
+    def forward(socket, data, forawrd_to, delay):
+        if delay:
+            time.sleep(delay/1000)
+        socket.sendto(data, forawrd_to)
 
-            should_drop = random.random() <= (drop_prob / 100)
-            should_delay = random.random() <= (delay_prob / 100)
-            if should_drop:
-                continue
-            if should_delay:
-                time.sleep(delay_time / 1000)
-            self.socket.sendto(data, forward_to)
+    def recv_packet(self):
+        with ThreadPoolExecutor() as executor:
+            while True:
+                data, (ip, port) = self.socket.recvfrom(1024)
+                is_server = (
+                    ip == self.server_config["ip"] and port == self.server_config["port"]
+                )
+                if not is_server:
+                    self.client_config["ip"] = ip
+                    self.client_config["port"] = port
+                forward_to = (
+                    str(
+                        ipaddress.ip_address(
+                            self.client_config["ip"]
+                            if is_server
+                            else self.server_config["ip"]
+                        )
+                    ),
+                    self.client_config["port"] if is_server else self.server_config["port"],
+                )
+                config = self.server_config if is_server else self.client_config
+                drop_prob = config["drop"]
+                delay_prob = config["delay"]
+                delay_time = config["delay_time"]
+
+                should_drop = random.random() <= (drop_prob / 100)
+                should_delay = random.random() <= (delay_prob / 100)
+                if should_drop:
+                    continue
+                executor.submit(Proxy.forward, self.socket, data, forward_to, delay_time if should_delay else None)
+
+    def run(self):
+        self.socket.bind((str(ipaddress.ip_address(self.listen_ip)), self.listen_port))
+        self.recv_packet()
 
     def stop(self):
-        self.running = False
         self.socket.close()
 
 
@@ -102,12 +105,12 @@ def main():
         listen_port=4000,
         target_ip="127.0.0.1",
         target_port=5000,
-        client_drop=80,
-        client_delay=80,
-        client_delay_time=1000,
-        server_drop=80,
-        server_delay=80,
-        server_delay_time=1000,
+        client_drop=0,
+        client_delay=50,
+        client_delay_time=5000,
+        server_drop=0,
+        server_delay=50,
+        server_delay_time=5000,
     )
     cli = CLI(
         [
