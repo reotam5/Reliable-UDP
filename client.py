@@ -1,6 +1,4 @@
 import sys
-
-from utils import reliableUDP
 from utils.client.argparser import ArgParser
 from utils.reliableUDP import ReliableUDP
 
@@ -8,7 +6,8 @@ from utils.reliableUDP import ReliableUDP
 def main():
     args = ArgParser()
 
-    reliableUDP = ReliableUDP().create()
+    reliableUDP = ReliableUDP()
+    reliableUDP.create()
     send = lambda x: reliableUDP.send(x, args.target, args.target_port)
 
     if args.input:
