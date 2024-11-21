@@ -11,7 +11,7 @@ class ReliableUDP():
 
     def __init__(self):
         self.socket: socket
-        self.timeout = 1
+        self.timeout = 0.5
         self.timeout_disconnect = 10
         self.random_int = 0
         self.random_int_peer = 0
@@ -61,7 +61,9 @@ class ReliableUDP():
                 is_fin = is_valid and packet.get_header_field("fin", base=2) == "1"
                 is_rst = packet.get_header_field("rst", base=2) == "1"
                 if is_rst:
-                    return FSM.STATE.EXIT
+                    self.message_pointer = 0
+                    self.random_int_peer = 0
+                    return "SEND_DATA"
                 if is_ack:
                     if self.message_pointer == 0:
                         self.random_int_peer = seq_num
@@ -91,7 +93,7 @@ class ReliableUDP():
             packet.set_header_field("ack", "1", base=2)
             self.socket.sendto(packet.to_byte(), (str(ipaddress.ip_address(ip)), port))
             return FSM.STATE.EXIT
-            
+
 
         fsm = FSM(
             [
@@ -130,7 +132,7 @@ class ReliableUDP():
                 self.target_addr = addr
                 self.random_int_peer = seq_num
 
-            if self.random_int_peer == 0:
+            if self.random_int_peer == 0 or (is_first_message and len(prev_message) != 0):
                 return "SEND_RST"
 
             if seq_num - self.random_int_peer == self.message_pointer:
