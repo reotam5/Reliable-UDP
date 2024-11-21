@@ -34,10 +34,5 @@ def main():
 
 
 if __name__ == "__main__":
-    # main()
-    # sys.exit(0)
-    pro = ReliableUDP()
-    pro.create()
-    pro.send("hello", "127.0.0.1", 4000)
-    pro.send("wow", "127.0.0.1", 4000)
-    pro.close()
+    main()
+    sys.exit(0)
