@@ -6,6 +6,9 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from socket import AF_INET, SOCK_DGRAM, socket
 from utils.cli import CLI
+import argparse
+
+from utils.validations import validate_ipv4, validate_port, validate_range, validate_range_input
 
 class Proxy:
     def __init__(
@@ -16,10 +19,10 @@ class Proxy:
         target_port: int,
         client_drop: int,
         client_delay: int,
-        client_delay_time: float,
+        client_delay_time: tuple[float, float],
         server_drop: float,
         server_delay: float,
-        server_delay_time: float,
+        server_delay_time: tuple[float, float],
     ):
         self.listen_ip = listen_ip
         self.listen_port = listen_port
@@ -76,7 +79,8 @@ class Proxy:
                 config = self.server_config if is_server else self.client_config
                 drop_prob = config["drop"]
                 delay_prob = config["delay"]
-                delay_time = config["delay_time"]
+                delay_time_min, delay_time_max = config["delay_time"]
+                delay_time = random.uniform(delay_time_min, delay_time_max or delay_time_min)
 
                 should_drop = random.random() <= (drop_prob / 100)
                 should_delay = random.random() <= (delay_prob / 100)
@@ -99,18 +103,84 @@ def signal_handler(_sig, _frame, proxy: Proxy, cli: CLI):
     sys.exit(0)
 
 
-def main():
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Proxy that simulates unreliable connection."
+    )
+    parser.add_argument(
+        "--listen-ip",
+        required=True,
+        type=validate_ipv4,
+        help="IPv4 address to bind the proxy server.",
+    )
+    parser.add_argument(
+        "--listen-port",
+        required=True,
+        type=validate_port,
+        help="Port number to listen for lcient packets.",
+    )
+    parser.add_argument(
+        "--target-ip",
+        required=True,
+        type=validate_ipv4,
+        help="IPv4 address of the server to forward packets to.",
+    )
+    parser.add_argument(
+        "--target-port",
+        required=True,
+        type=validate_port,
+        help="Port number of the server.",
+    )
+    parser.add_argument(
+        "--client-drop",
+        default=0,
+        type=validate_range(min=0, max=100),
+        help="Drop chance(0% -100%) for packets from the client.",
+    )
+    parser.add_argument(
+        "--server-drop",
+        default=0,
+        type=validate_range(min=0, max=100),
+        help="Drop chance(0% -100%) for packets from the server.",
+    )
+    parser.add_argument(
+        "--client-delay",
+        default=0,
+        type=validate_range(min=0, max=100),
+        help="Delay chance(0% -100%) for packets from the client.",
+    )
+    parser.add_argument(
+        "--server-delay",
+        default=0,
+        type=validate_range(min=0, max=100),
+        help="Delay chance(0% -100%) for packets from the server.",
+    )
+    parser.add_argument(
+        "--client-delay-time",
+        default=(0,None),
+        type=validate_range_input(min=0),
+        help="Delay time in milliseconds(fixed or range. eg) 1000 for 1 second, or 1000-2000 for 1-2 seconds",
+    )
+    parser.add_argument(
+        "--server-delay-time",
+        default=(0,None),
+        type=validate_range_input(min=0),
+        help="Delay time in milliseconds(fixed or range. eg) 1000 for 1 second, or 1000-2000 for 1-2 seconds",
+    )
+    args = parser.parse_args()
+
+
     proxy = Proxy(
-        listen_ip="0.0.0.0",
-        listen_port=4000,
-        target_ip="127.0.0.1",
-        target_port=5000,
-        client_drop=0,
-        client_delay=50,
-        client_delay_time=500,
-        server_drop=0,
-        server_delay=50,
-        server_delay_time=500,
+        listen_ip=args.listen_ip,
+        listen_port=args.listen_port,
+        target_ip=args.target_ip,
+        target_port=args.target_port,
+        client_drop=args.client_drop,
+        client_delay=args.client_delay,
+        client_delay_time=args.client_delay_time,
+        server_drop=args.server_drop,
+        server_delay=args.server_delay,
+        server_delay_time=args.server_delay_time,
     )
     cli = CLI(
         [
@@ -141,8 +211,8 @@ def main():
                 "min": 0,
                 "step": 100,
                 "suffix": "ms",
-                "get_value": lambda: proxy.get_config("client", "delay_time"),
-                "set_value": lambda x: proxy.set_config("client", "delay_time", x),
+                "get_value": lambda: proxy.get_config("client", "delay_time")[0],
+                "set_value": lambda x: proxy.set_config("client", "delay_time", (x,None)),
             },
             {
                 "name": "Server drop",
@@ -167,8 +237,8 @@ def main():
                 "min": 0,
                 "step": 100,
                 "suffix": "ms",
-                "get_value": lambda: proxy.get_config("server", "delay_time"),
-                "set_value": lambda x: proxy.set_config("server", "delay_time", x),
+                "get_value": lambda: proxy.get_config("server", "delay_time")[0],
+                "set_value": lambda x: proxy.set_config("server", "delay_time", (x,None)),
             },
         ],
         10,
@@ -185,7 +255,4 @@ def main():
 
     executor.shutdown(wait=True)
 
-
-if __name__ == "__main__":
-    main()
     sys.exit(0)

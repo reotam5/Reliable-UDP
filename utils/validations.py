@@ -1,5 +1,6 @@
 import ipaddress
 import sys
+from typing import Optional
 
 
 def validate_port(value):
@@ -24,13 +25,49 @@ def validate_ipv4(value):
         sys.exit(f"Invalid IPv4 address format: {value}.")
 
 
-def validate_greater_than(value, min: int):
-    try:
-        num = int(value)
-        if num < min:
-            raise ValueError
-        return num
-    except:
-        sys.exit(
-            f"Invalid number {value}. Value needs to be an integer greater than or equal to {min}."
-        )
+def validate_range(min: Optional[float] = None, max: Optional[float] = None):
+    def validation(value):
+        try:
+            num = float(value)
+            if min != None:
+                if num < min:
+                    raise ValueError
+            if max != None:
+                if num > max:
+                    raise ValueError
+            return num
+        except ValueError:
+            if min != None and max != None:
+                sys.exit(
+                    f"Invalid number {value}. Value needs to be between {min} and {max}."
+                )
+            if min == None and max != None:
+                sys.exit(
+                    f"Invalid number {value}. Value needs to be smaller than or equal to {max}."
+                )
+            if min != None and max == None:
+                sys.exit(
+                    f"Invalid number {value}. Value needs to be greater than or equal to {min}."
+                )
+        except:
+            sys.exit(f"Invalid number {value}")
+    return validation 
+
+
+def validate_range_input(delimiter="-", min: Optional[float] = None):
+    def validation(value):
+        try:
+            parts = value.split(delimiter)
+            first = float(parts[0]) if len(parts) > 0 and parts[0] else None
+            second = float(parts[1]) if len(parts) > 1 and parts[1] else None
+            if min != None:
+                if first and first < min:
+                    sys.exit(f"Invalid number {first}. Value needs to be greater than or equal to {min}")
+            if second != None:
+                if first and second and first >= second:
+                    sys.exit(f"Invalid range {value}. First number has to be smaller than the second one.")
+            return (first, second)
+        except Exception as e:
+            print(e)
+            sys.exit(f"Invalid input {value}")
+    return validation

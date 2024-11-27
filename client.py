@@ -1,14 +1,42 @@
 import sys
-from utils.client.argparser import ArgParser
+import argparse
 from utils.reliableUDP import ReliableUDP
+from utils.validations import validate_ipv4, validate_port, validate_range
 
 
 def main():
-    args = ArgParser()
+    parser = argparse.ArgumentParser(
+        description="Client application of the Reliable UDP project. Sends messages to a server under custom reliable protocol."
+    )
+    parser.add_argument(
+        "input",
+        type=str,
+        nargs="?",
+        help="std input msg or input buffer to send to server",
+    )
+    parser.add_argument(
+        "--target-ip",
+        required=True,
+        type=validate_ipv4,
+        help="IPv4 address of the server.",
+    )
+    parser.add_argument(
+        "--target-port",
+        required=True,
+        type=validate_port,
+        help="Port number of the server.",
+    )
+    parser.add_argument(
+        "--timeout",
+        required=True,
+        type=validate_range(min=0),
+        help="Port number of the server.",
+    )
+    args = parser.parse_args()
 
-    reliableUDP = ReliableUDP()
-    reliableUDP.create()
-    send = lambda x: reliableUDP.send(x, args.target, args.target_port)
+
+    reliableUDP = ReliableUDP(timeout=args.timeout).create()
+    send = lambda x: reliableUDP.send(x, args.target_ip, args.target_port)
 
     if args.input:
         # Command-line argument provided

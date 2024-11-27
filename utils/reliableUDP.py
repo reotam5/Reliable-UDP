@@ -9,10 +9,10 @@ import random
 class ReliableUDP():
     BUFFER_SIZE = 1024
 
-    def __init__(self):
+    def __init__(self, timeout=5):
         self.socket: socket
         self.timeout = 0.1
-        self.timeout_disconnect = 5
+        self.timeout_disconnect = timeout
         self.random_int = 0
         self.random_int_peer = 0
         self.message_pointer = 0
