@@ -3,7 +3,6 @@ from socket import AF_INET, SOCK_DGRAM, socket
 from typing import Any 
 from utils.packet import Packet 
 from utils.fsm import FSM
-import random
 
 
 class ReliableUDP():
@@ -11,10 +10,8 @@ class ReliableUDP():
 
     def __init__(self, timeout=5):
         self.socket: socket
-        self.timeout = 0.1
+        self.timeout = 0.5
         self.timeout_disconnect = timeout
-        self.random_int = 0
-        self.random_int_peer = 0
         self.message_pointer = 0
         self.payload_size = 1
         self.target_addr: Any = None
@@ -38,13 +35,11 @@ class ReliableUDP():
 
     def send(self, message, ip, port):
         self.message_pointer = 0
-        self.random_int_peer = 0
-        self.random_int = random.randint(1, 1000)
 
         def send_data(retry = self.timeout_disconnect // self.timeout):
             packet = Packet()
-            packet.set_header_field("seq_num", str(self.random_int + self.message_pointer), base=10)
-            packet.set_header_field("ack_num", str(self.random_int_peer), base=10)
+            packet.set_header_field("seq_num", str(self.message_pointer), base=10)
+            packet.set_header_field("ack_num", "0", base=10)
             message_end_pointer = min(self.message_pointer + self.payload_size, len(message))
             is_first = self.message_pointer == 0
             is_last = message_end_pointer == len(message)
@@ -54,10 +49,12 @@ class ReliableUDP():
                 packet.set_header_field("fin", "1", base=2)
             packet.set_payload(message[self.message_pointer:message_end_pointer])
             self.socket.sendto(packet.to_byte(), (str(ip), port))
-            return ("WAIT_ACK", is_first, is_last, message_end_pointer - self.message_pointer, retry)
+            return ("WAIT_ACK", is_last, message_end_pointer - self.message_pointer, retry)
 
-        def wait_ack(is_first, is_last, payload_length, retry):
-            if retry < 0:
+        def wait_ack(is_last, payload_length, retry):
+            if retry < 1:
+                if is_last:
+                    print('server is likely closed already. closing as well...')
                 if not is_last:
                     print('timeout after sending:', message[:self.message_pointer])
                 return FSM.STATE.EXIT
@@ -67,24 +64,24 @@ class ReliableUDP():
                 packet = Packet(data)
                 ack_num = int(packet.get_header_field("ack_num", base=10))
                 seq_num = int(packet.get_header_field("seq_num", base=10))
-                is_valid = ack_num - self.random_int == self.message_pointer + payload_length
+                is_valid = ack_num == self.message_pointer + payload_length
                 is_ack = is_valid and packet.get_header_field("ack", base=2) == "1"
                 is_fin = is_valid and packet.get_header_field("fin", base=2) == "1"
 
-                if is_first:
-                    self.random_int_peer = seq_num
                 if is_ack:
-                    self.message_pointer = ack_num - self.random_int
+                    self.message_pointer = ack_num
                 if is_fin:
-                    return "SEND_ACK"
+                    return ("SEND_ACK", seq_num)
+                if is_last:
+                    return ("WAIT_ACK", True, 0, retry - 1)
                 return ("SEND_DATA", self.timeout_disconnect // self.timeout if is_valid else retry)
             except TimeoutError:
                 return ("SEND_DATA", retry - 1)
 
-        def send_ack():
+        def send_ack(last_seq_num):
             packet = Packet()
-            packet.set_header_field("seq_num", str(self.message_pointer + self.random_int + 1), base=10)
-            packet.set_header_field("ack_num", str(self.random_int_peer + 1), base=10)
+            packet.set_header_field("seq_num", str(self.message_pointer + 1), base=10)
+            packet.set_header_field("ack_num", str(last_seq_num + 1), base=10)
             packet.set_header_field("ack", "1", base=2)
             self.socket.sendto(packet.to_byte(), (str(ipaddress.ip_address(ip)), port))
             return FSM.STATE.EXIT
@@ -97,6 +94,7 @@ class ReliableUDP():
                 { "source": "WAIT_ACK", "dest": "SEND_DATA", "action": send_data },
                 { "source": "WAIT_ACK", "dest": FSM.STATE.EXIT, "action": self.flush_recv_buffer },
                 { "source": "WAIT_ACK", "dest": "SEND_ACK", "action": send_ack },
+                { "source": "WAIT_ACK", "dest": "WAIT_ACK", "action": wait_ack },
                 { "source": "SEND_ACK", "dest": FSM.STATE.EXIT, "action": self.flush_recv_buffer },
             ],
             initial_state="SEND_DATA",
@@ -106,8 +104,6 @@ class ReliableUDP():
 
     def recv(self):
         self.message_pointer = 0
-        self.random_int_peer = 0
-        self.random_int = random.randint(1, 1000)
 
         def receive_data(prev_message = ""):
             self.socket.settimeout(None)
@@ -117,17 +113,14 @@ class ReliableUDP():
             payload = packet.get_payload() or ""
             is_last_message = packet.get_header_field("fin", base=2) == "1"
             is_syn = packet.get_header_field("syn", base=2) == "1"
-            is_first_message = is_syn and self.random_int_peer == 0
-            is_valid = seq_num - self.random_int_peer == self.message_pointer
-            is_new_connection = is_syn and self.random_int_peer != seq_num
+            is_valid = seq_num == self.message_pointer
 
-            if is_first_message or is_new_connection:
+            if is_syn and is_valid:
                 self.message_pointer = 0
                 self.target_addr = addr
-                self.random_int_peer = seq_num
                 prev_message = ""
 
-            if is_valid or is_first_message or is_new_connection:
+            if is_valid:
                 self.message_pointer = len(prev_message + payload)
                 return ("SEND_ACK", prev_message + payload, is_last_message)
             return ("SEND_ACK", prev_message, False)
@@ -137,8 +130,8 @@ class ReliableUDP():
                 return ("RECEIVE_DATA", "")
             packet = Packet()
             packet.set_header_field("ack", "1", base=2)
-            packet.set_header_field("seq_num", str(self.random_int), base=10)
-            packet.set_header_field("ack_num", str(self.random_int_peer + len(acknowledged_message)), base=10)
+            packet.set_header_field("seq_num", "0", base=10)
+            packet.set_header_field("ack_num", str(len(acknowledged_message)), base=10)
             self.socket.sendto(packet.to_byte(), self.target_addr)
             
             if is_last_message:
@@ -148,13 +141,15 @@ class ReliableUDP():
         def send_fin(message, retry = self.timeout_disconnect // self.timeout):
             packet = Packet()
             packet.set_header_field("fin", "1", base=2)
-            packet.set_header_field("seq_num", str(self.random_int), base=10)
-            packet.set_header_field("ack_num", str(self.random_int_peer + len(message)), base=10)
+            packet.set_header_field("ack", "1", base=2)
+            packet.set_header_field("seq_num", "0", base=10)
+            packet.set_header_field("ack_num", str(len(message)), base=10)
             self.socket.sendto(packet.to_byte(), self.target_addr)
             return ("WAIT_ACK", message, retry)
 
         def wait_ack(message, retry):
-            if retry < 0:
+            if retry < 1:
+                print('client is likely closed already. closing as well...')
                 return (FSM.STATE.EXIT, message)
             try:
                 self.socket.settimeout(self.timeout)
@@ -162,7 +157,7 @@ class ReliableUDP():
                 packet = Packet(data)
                 is_ack = packet.get_header_field("ack", base=2) == "1"
                 ack_num = int(packet.get_header_field("ack_num", base=10))
-                is_valid = ack_num  == self.random_int + 1
+                is_valid = ack_num  == 1
                 if is_ack and is_valid:
                     return (FSM.STATE.EXIT, message)
                 return ("SEND_FIN", message, retry - 1)
@@ -171,8 +166,6 @@ class ReliableUDP():
 
         def clean_up(message):
             self.message_pointer = 0 
-            self.random_int_peer = 0 
-            self.random_int = 0
             self.flush_recv_buffer()
             return message
 
