@@ -9,6 +9,12 @@ from utils.cli import CLI
 import argparse
 
 from utils.validations import validate_ipv4, validate_port, validate_range, validate_range_input
+from utils.constants import (
+    PROXY_LISTEN_IP,
+    PROXY_LISTEN_PORT,
+    PROXY_TARGET_IP,
+    PROXY_TARGET_PORT,
+)
 
 class Proxy:
     def __init__(
@@ -109,26 +115,26 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--listen-ip",
-        required=True,
         type=validate_ipv4,
+        default=PROXY_LISTEN_IP,
         help="IPv4 address to bind the proxy server.",
     )
     parser.add_argument(
         "--listen-port",
-        required=True,
         type=validate_port,
-        help="Port number to listen for lcient packets.",
+        default=PROXY_LISTEN_PORT,
+        help="Port number listening for incoming client packets.",
     )
     parser.add_argument(
         "--target-ip",
-        required=True,
         type=validate_ipv4,
+        default=PROXY_TARGET_IP,
         help="IPv4 address of the server to forward packets to.",
     )
     parser.add_argument(
         "--target-port",
-        required=True,
         type=validate_port,
+        default=PROXY_TARGET_PORT,
         help="Port number of the server.",
     )
     parser.add_argument(
@@ -170,6 +176,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 
+    listening = f"Listening={args.listen_ip}:{args.listen_port}"
+    forwarding = f"Forwarding={args.target_ip}:{args.target_port}"
+    title = f"Proxy Settings:{listening}||{forwarding}\n\n"
+
     proxy = Proxy(
         listen_ip=args.listen_ip,
         listen_port=args.listen_port,
@@ -184,6 +194,7 @@ if __name__ == "__main__":
     )
     cli = CLI(
         [
+            title,
             "Proxy Parameters",
             "UP/DOWN arrows to select value, LEFT/RIGHT to adjust",
         ],

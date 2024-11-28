@@ -16,8 +16,8 @@ class CLI:
         selection = 0
 
         stdscr.clear()
-        for i in range(len(self.titles)):
-            stdscr.addstr(i, 0, self.titles[i])
+        for i, title in enumerate(self.titles):
+            stdscr.addstr(i, 0, title)
         stdscr.refresh()
 
         while self.running:
