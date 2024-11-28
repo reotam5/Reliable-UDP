@@ -55,7 +55,7 @@ class ArgParser:
         self.timeout: int = args.timeout
 
     def __str__(self):
-        return f"Input: {self.input}, Target: {self.target}, Port: {self.target_port}, Timeout: {self.timeout}"
+        return f"Targeting: {self.target}:{self.target_port}, timeout: {self.timeout}, input: {self.input}"
 
     def __repr__(self):
         return self.__str__()

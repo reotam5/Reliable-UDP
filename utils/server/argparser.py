@@ -1,6 +1,6 @@
 import argparse
 
-from utils.constants import SERVER_DEFAULT_TARGET_IP, SERVER_DEFAULT_TARGET_PORT
+from utils.constants import SERVER_DEFAULT_LISTEN_IP, SERVER_DEFAULT_LISTEN_PORT
 from utils.validations import validate_ipv4, validate_port
 
 
@@ -14,14 +14,14 @@ class ArgParser:
             "--listen-ip",
             "-i",
             type=validate_ipv4,
-            default=SERVER_DEFAULT_TARGET_IP,
+            default=SERVER_DEFAULT_LISTEN_IP,
             help="IPv4 address to bind the server.",
         )
         parser.add_argument(
             "--listen-port",
             "-p",
             type=validate_port,
-            default=SERVER_DEFAULT_TARGET_PORT,
+            default=SERVER_DEFAULT_LISTEN_PORT,
             help="Port number to listen on.",
         )
 
@@ -31,7 +31,7 @@ class ArgParser:
         self.listen_port: int = args.listen_port
 
     def __str__(self):
-        return f"Listen IP: {self.listen_ip}, Listen Port: {self.listen_port}"
+        return f"Listening: {self.listen_ip}:{self.listen_port}"
 
     def __repr__(self):
         return self.__str__()
