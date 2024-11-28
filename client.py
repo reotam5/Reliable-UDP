@@ -6,6 +6,9 @@ from utils.reliableUDP import ReliableUDP
 
 def main():
     parser = ArgParser()
+    print("Client arguments:")
+    print(parser)
+    print("")
 
     reliableUDP = ReliableUDP(timeout=parser.timeout).create()
     send = lambda x: reliableUDP.send(x, parser.target, parser.target_port)

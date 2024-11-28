@@ -10,7 +10,9 @@ from utils.validations import validate_ipv4, validate_port, validate_range
 
 class ArgParser:
     def __init__(self):
-        parser = argparse.ArgumentParser(description="ReliableUDP client")
+        parser = argparse.ArgumentParser(
+            description="Client application of the Reliable UDP project. Sends messages to a server under custom reliable protocol."
+        )
 
         parser.add_argument(
             "input",
