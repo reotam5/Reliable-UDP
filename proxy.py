@@ -115,24 +115,28 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--listen-ip",
+        "--lip",
         type=validate_ipv4,
         default=PROXY_LISTEN_IP,
         help="IPv4 address to bind the proxy server.",
     )
     parser.add_argument(
         "--listen-port",
+        "--lp",
         type=validate_port,
         default=PROXY_LISTEN_PORT,
         help="Port number listening for incoming client packets.",
     )
     parser.add_argument(
         "--target-ip",
+        "--tip",
         type=validate_ipv4,
         default=PROXY_TARGET_IP,
         help="IPv4 address of the server to forward packets to.",
     )
     parser.add_argument(
         "--target-port",
+        "--tp",
         type=validate_port,
         default=PROXY_TARGET_PORT,
         help="Port number of the server.",
@@ -141,25 +145,25 @@ if __name__ == "__main__":
         "--client-drop",
         default=0,
         type=validate_range(min=0, max=100),
-        help="Drop chance(0% -100%) for packets from the client.",
+        help="Drop chance(0%% -100%%) for packets from the client.",
     )
     parser.add_argument(
         "--server-drop",
         default=0,
         type=validate_range(min=0, max=100),
-        help="Drop chance(0% -100%) for packets from the server.",
+        help="Drop chance(0%% -100%%) for packets from the server.",
     )
     parser.add_argument(
         "--client-delay",
         default=0,
         type=validate_range(min=0, max=100),
-        help="Delay chance(0% -100%) for packets from the client.",
+        help="Delay chance(0%% -100%%) for packets from the client.",
     )
     parser.add_argument(
         "--server-delay",
         default=0,
         type=validate_range(min=0, max=100),
-        help="Delay chance(0% -100%) for packets from the server.",
+        help="Delay chance(0%% -100%%) for packets from the server.",
     )
     parser.add_argument(
         "--client-delay-time",
