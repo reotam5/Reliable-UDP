@@ -150,11 +150,11 @@ class ReliableUDP():
             self.socket.sendto(packet.to_byte(), self.target_addr)
             
             if is_last_message:
-                return ("SEND_FIN", acknowledged_message)
+                return ("SEND_FIN", acknowledged_message, datetime.now())
             return ("RECEIVE_DATA", acknowledged_message)
 
-        def send_fin(message, start_time = datetime.now()):
-            if datetime.now() - start_time > timedelta(seconds=self.timeout_disconnect):
+        def send_fin(message, start_time):
+            if (datetime.now() - start_time) > timedelta(seconds=self.timeout_disconnect):
                 return (FSM.STATE.EXIT, message)
 
             packet = Packet()
