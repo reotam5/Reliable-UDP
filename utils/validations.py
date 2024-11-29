@@ -77,7 +77,7 @@ def validate_range_input(delimiter="-", min: Optional[float] = None):
             if second != None:
                 if first and second and first >= second:
                     sys.exit(f"Invalid range {value}. First number has to be smaller than the second one.")
-            return (first, second)
+            return (first or 0, second or first)
         except Exception as e:
             print(e)
             sys.exit(f"Invalid input {value}")

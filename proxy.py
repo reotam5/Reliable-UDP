@@ -167,13 +167,13 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--client-delay-time",
-        default=(0,None),
+        default=(0,0),
         type=validate_range_input(min=0),
         help="Delay time in milliseconds(fixed or range. eg) 1000 for 1 second, or 1000-2000 for 1-2 seconds",
     )
     parser.add_argument(
         "--server-delay-time",
-        default=(0,None),
+        default=(0,0),
         type=validate_range_input(min=0),
         help="Delay time in milliseconds(fixed or range. eg) 1000 for 1 second, or 1000-2000 for 1-2 seconds",
     )
@@ -222,12 +222,20 @@ if __name__ == "__main__":
                 "set_value": lambda x: proxy.set_config("client", "delay", x),
             },
             {
-                "name": "Client delay time",
+                "name": "Client delay time - min",
                 "min": 0,
                 "step": 100,
                 "suffix": "ms",
                 "get_value": lambda: proxy.get_config("client", "delay_time")[0],
-                "set_value": lambda x: proxy.set_config("client", "delay_time", (x,None)),
+                "set_value": lambda x: proxy.set_config("client", "delay_time", (min(x, proxy.get_config("client", "delay_time")[1]),proxy.get_config("client", "delay_time")[1])),
+            },
+            {
+                "name": "Client delay time - max",
+                "min": 0,
+                "step": 100,
+                "suffix": "ms",
+                "get_value": lambda: proxy.get_config("client", "delay_time")[1],
+                "set_value": lambda x: proxy.set_config("client", "delay_time", (proxy.get_config("client", "delay_time")[0], max(x, proxy.get_config("client", "delay_time")[0]))),
             },
             {
                 "name": "Server drop",
@@ -248,12 +256,20 @@ if __name__ == "__main__":
                 "set_value": lambda x: proxy.set_config("server", "delay", x),
             },
             {
-                "name": "Server delay time",
+                "name": "Server delay time - min",
                 "min": 0,
                 "step": 100,
                 "suffix": "ms",
                 "get_value": lambda: proxy.get_config("server", "delay_time")[0],
-                "set_value": lambda x: proxy.set_config("server", "delay_time", (x,None)),
+                "set_value": lambda x: proxy.set_config("server", "delay_time", (min(x, proxy.get_config("server", "delay_time")[1]),proxy.get_config("server", "delay_time")[1])),
+            },
+            {
+                "name": "Server delay time - max",
+                "min": 0,
+                "step": 100,
+                "suffix": "ms",
+                "get_value": lambda: proxy.get_config("server", "delay_time")[1],
+                "set_value": lambda x: proxy.set_config("server", "delay_time", (proxy.get_config("server", "delay_time")[0],max(x, proxy.get_config("server", "delay_time")[0]))),
             },
         ],
         10,
