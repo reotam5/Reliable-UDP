@@ -113,7 +113,7 @@ class ReliableUDP():
         self.message_pointer = 0
         self.random_number = 0
 
-        def receive_data(prev_message = ""):
+        def receive_data(buffer = ""):
             self.socket.settimeout(None)
             data, addr = self.socket.recvfrom(1024)
             packet = Packet(data)
@@ -129,12 +129,12 @@ class ReliableUDP():
                 self.random_number = seq_num
                 self.message_pointer = 0
                 self.target_addr = addr
-                prev_message = ""
+                buffer = ""
 
             if (is_valid or is_new_connection) and not is_duplicate_syn:
-                self.message_pointer = len(prev_message + payload)
-                return ("SEND_ACK", prev_message + payload, is_last_message)
-            return ("SEND_ACK", prev_message, False)
+                self.message_pointer = len(buffer + payload)
+                return ("SEND_ACK", buffer + payload, is_last_message)
+            return ("SEND_ACK", buffer, False)
 
         def send_ack(acknowledged_message, is_last_message):
             if not self.target_addr:
