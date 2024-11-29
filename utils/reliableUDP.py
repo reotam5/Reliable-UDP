@@ -8,13 +8,13 @@ from random import randint
 class ReliableUDP():
     BUFFER_SIZE = 1024
     RETRIES = 20
+    PAYLOAD_SIZE = 1
 
     def __init__(self, timeout=1):
         self.socket: socket
         self.message_pointer = 0 
         self.random_number = 0
         self.prev_random_number = None
-        self.payload_size = 1
         self.target_addr: Any = None
         self.retransmission_timeout = timeout
 
@@ -41,7 +41,7 @@ class ReliableUDP():
         self.random_number = randint(1, 5000)
 
         def send_data(retries = ReliableUDP.RETRIES):
-            message_end_pointer = min(self.message_pointer + self.payload_size, len(message))
+            message_end_pointer = min(self.message_pointer + ReliableUDP.PAYLOAD_SIZE, len(message))
             is_first = self.message_pointer == 0
             is_last = message_end_pointer == len(message)
 
