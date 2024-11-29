@@ -6,7 +6,7 @@ from typing import Optional
 def validate_port(value):
     try:
         port = int(value)
-        if not 0 < port < 65535:
+        if not 0 < port <= 65535:
             raise ValueError
         return port
     except:
