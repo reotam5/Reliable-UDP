@@ -47,7 +47,7 @@ class ReliableUDP():
 
             if retries < 1:
                 if not is_last:
-                    print(f"\033[91mMax retires reached({ReliableUDP.RETRIES}) {f"'{message[:self.message_pointer]}'" if self.message_pointer > 0 else ""} \033[0m")
+                    print(f"\033[91mAborted after {ReliableUDP.RETRIES * self.retransmission_timeout} seconds ({ReliableUDP.RETRIES} retries * {self.retransmission_timeout} second timeout) {f"\n'{message[:self.message_pointer]}'" if self.message_pointer > 0 else ""} \033[0m")
                 return FSM.STATE.EXIT
 
             packet = Packet()
