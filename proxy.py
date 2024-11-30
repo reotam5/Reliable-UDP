@@ -6,15 +6,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from socket import AF_INET, SOCK_DGRAM, socket
 from utils.cli import CLI
-import argparse
-
-from utils.validations import validate_ipv4, validate_port, validate_range, validate_range_input
-from utils.constants import (
-    PROXY_LISTEN_IP,
-    PROXY_LISTEN_PORT,
-    PROXY_TARGET_IP,
-    PROXY_TARGET_PORT,
-)
+from utils.proxy.argparser import ArgParser
 
 class Proxy:
     def __init__(
@@ -110,95 +102,23 @@ def signal_handler(_sig, _frame, proxy: Proxy, cli: CLI):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Proxy that simulates unreliable connection."
-    )
-    parser.add_argument(
-        "--listen-ip",
-        "--lip",
-        type=validate_ipv4,
-        default=PROXY_LISTEN_IP,
-        help="IPv4 address to bind the proxy server.",
-    )
-    parser.add_argument(
-        "--listen-port",
-        "--lp",
-        type=validate_port,
-        default=PROXY_LISTEN_PORT,
-        help="Port number listening for incoming client packets.",
-    )
-    parser.add_argument(
-        "--target-ip",
-        "--tip",
-        type=validate_ipv4,
-        default=PROXY_TARGET_IP,
-        help="IPv4 address of the server to forward packets to.",
-    )
-    parser.add_argument(
-        "--target-port",
-        "--tp",
-        type=validate_port,
-        default=PROXY_TARGET_PORT,
-        help="Port number of the server.",
-    )
-    parser.add_argument(
-        "--client-drop",
-        default=0,
-        type=validate_range(min=0, max=100),
-        help="Drop chance(0%% -100%%) for packets from the client.",
-    )
-    parser.add_argument(
-        "--server-drop",
-        default=0,
-        type=validate_range(min=0, max=100),
-        help="Drop chance(0%% -100%%) for packets from the server.",
-    )
-    parser.add_argument(
-        "--client-delay",
-        default=0,
-        type=validate_range(min=0, max=100),
-        help="Delay chance(0%% -100%%) for packets from the client.",
-    )
-    parser.add_argument(
-        "--server-delay",
-        default=0,
-        type=validate_range(min=0, max=100),
-        help="Delay chance(0%% -100%%) for packets from the server.",
-    )
-    parser.add_argument(
-        "--client-delay-time",
-        default=(0,0),
-        type=validate_range_input(min=0),
-        help="Delay time in milliseconds(fixed or range. eg) 1000 for 1 second, or 1000-2000 for 1-2 seconds",
-    )
-    parser.add_argument(
-        "--server-delay-time",
-        default=(0,0),
-        type=validate_range_input(min=0),
-        help="Delay time in milliseconds(fixed or range. eg) 1000 for 1 second, or 1000-2000 for 1-2 seconds",
-    )
-    args = parser.parse_args()
-
-
-    listening = f"Listening={args.listen_ip}:{args.listen_port}"
-    forwarding = f"Forwarding={args.target_ip}:{args.target_port}"
-    title = f"Proxy Settings:{listening}||{forwarding}\n\n"
+    parser = ArgParser()
 
     proxy = Proxy(
-        listen_ip=args.listen_ip,
-        listen_port=args.listen_port,
-        target_ip=args.target_ip,
-        target_port=args.target_port,
-        client_drop=args.client_drop,
-        client_delay=args.client_delay,
-        client_delay_time=args.client_delay_time,
-        server_drop=args.server_drop,
-        server_delay=args.server_delay,
-        server_delay_time=args.server_delay_time,
+        listen_ip=parser.listen_ip,
+        listen_port=parser.listen_port,
+        target_ip=parser.target_ip,
+        target_port=parser.target_port,
+        client_drop=parser.client_drop,
+        client_delay=parser.client_delay,
+        client_delay_time=parser.client_delay_time,
+        server_drop=parser.server_drop,
+        server_delay=parser.server_delay,
+        server_delay_time=parser.server_delay_time,
     )
     cli = CLI(
         [
-            title,
+            str(parser),
             "Proxy Parameters",
             "UP/DOWN arrows to select value, LEFT/RIGHT to adjust",
         ],
