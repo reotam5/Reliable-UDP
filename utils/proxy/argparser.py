@@ -38,36 +38,42 @@ class ArgParser:
         )
         parser.add_argument(
             "--client-drop",
+            "--cdrop",
             default=0,
             type=validate_range(min=0, max=100),
             help="Drop chance(0%% -100%%) for packets from the client.",
         )
         parser.add_argument(
             "--server-drop",
+            "--sdrop",
             default=0,
             type=validate_range(min=0, max=100),
             help="Drop chance(0%% -100%%) for packets from the server.",
         )
         parser.add_argument(
             "--client-delay",
+            "--cdelay",
             default=0,
             type=validate_range(min=0, max=100),
             help="Delay chance(0%% -100%%) for packets from the client.",
         )
         parser.add_argument(
             "--server-delay",
+            "--sdelay",
             default=0,
             type=validate_range(min=0, max=100),
             help="Delay chance(0%% -100%%) for packets from the server.",
         )
         parser.add_argument(
             "--client-delay-time",
+            "--cdt",
             default=(0,0),
             type=validate_range_input(min=0),
             help="Delay time in milliseconds(fixed or range. eg) 1000 for 1 second, or 1000-2000 for 1-2 seconds",
         )
         parser.add_argument(
             "--server-delay-time",
+            "--sdt",
             default=(0,0),
             type=validate_range_input(min=0),
             help="Delay time in milliseconds(fixed or range. eg) 1000 for 1 second, or 1000-2000 for 1-2 seconds",
