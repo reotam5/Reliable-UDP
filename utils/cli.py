@@ -15,12 +15,9 @@ class CLI:
         stdscr.nodelay(1)
         selection = 0
 
-        stdscr.clear()
-        for i, title in enumerate(self.titles):
-            stdscr.addstr(i, 0, title)
-        stdscr.refresh()
-
         while self.running:
+            for i, title in enumerate(self.titles):
+                stdscr.addstr(i, 0, title)
             for i, item in enumerate(self.values):
                 if i == selection:
                     attr = curses.A_NORMAL
@@ -60,7 +57,8 @@ class CLI:
                 self.values[selection]["set_value"](newValue)
 
             stdscr.refresh()
-            time.sleep(0.01)
+            stdscr.clear()
+            time.sleep(0.05)
 
     def start(self):
         self.running = True

@@ -80,4 +80,9 @@ class Packet():
     def to_byte(self) -> bytes:
         return bytes.fromhex(self.get_hex())
 
+    def __eq__(self, value: object) -> bool:
+        if isinstance(value, Packet):
+            return value.get_hex() == self.get_hex()
+        return False
+
 
